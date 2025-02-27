@@ -1,0 +1,11 @@
+*.mp4
+*.avi
+*.png
+*.jpg
+*.jpeg
+data/*
+!data/.gitkeep
+!*.dvc
+*.npz
+*.pth
+checkpoints/*.pt
