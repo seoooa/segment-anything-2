@@ -27,7 +27,7 @@ def main(prompt, video_path):
             raise ValueError("Video file is not selected.")
     
     video_path = convert_to_mp4(video_path)
-    output_path = "./output/mask_" + video_path.split("/")[-1]
+    output_path = "./output/mask-prediction/" + video_path.split("/")[-1]
     
     # Initialize the predictor
     sam2_checkpoint = "./checkpoints/sam2.1_hiera_large.pt"

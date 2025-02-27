@@ -3,7 +3,6 @@ import torch
 import cv2
 import numpy as np
 import click
-from sam2.sam2_image_predictor import SAM2ImagePredictor
 from sam2.build_sam import build_sam2_image_predictor
 from src.utils.prompt import get_click_point, get_bounding_box
 from src.utils.image import show_image_masks_and_prompts, save_image_with_masks_and_prompts
@@ -24,7 +23,7 @@ def main(prompt, image_path):
         )
         if not image_path:
             raise ValueError("Image file is not selected.")
-    output_path = "./output/mask_" + image_path.split("/")[-1]
+    output_path = "./output/mask-prediction/" + image_path.split("/")[-1]
 
     # load the image and convert to RGB (the image is in BGR format)
     image = cv2.imread(image_path)
