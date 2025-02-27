@@ -32,6 +32,7 @@ pipenv install
 Then, we need to download a model checkpoint.
 
 ```bash
+# excute on git bash
 cd checkpoints
 ./download_ckpts.sh
 

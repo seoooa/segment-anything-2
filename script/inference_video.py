@@ -3,7 +3,7 @@ import torch
 import cv2
 import numpy as np
 import click
-from sam2.sam2_video_predictor import SAM2VideoPredictor
+from sam2.build_sam import build_sam2_video_predictor
 from tqdm import tqdm
 
 from src.utils.video import show_video_masks, save_video_with_masks, load_video, convert_to_mp4
@@ -30,7 +30,9 @@ def main(prompt, video_path):
     output_path = "./output/mask_" + video_path.split("/")[-1]
     
     # Initialize the predictor
-    predictor = SAM2VideoPredictor.from_pretrained("facebook/sam2.1-hiera-large")
+    sam2_checkpoint = "./checkpoints/sam2.1_hiera_large.pt"
+    model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
+    predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint)
 
     with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
 

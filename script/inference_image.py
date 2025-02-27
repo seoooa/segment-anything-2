@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import click
 from sam2.sam2_image_predictor import SAM2ImagePredictor
+from sam2.build_sam import build_sam2_image_predictor
 from src.utils.prompt import get_click_point, get_bounding_box
 from src.utils.image import show_image_masks_and_prompts, save_image_with_masks_and_prompts
 
@@ -33,7 +34,9 @@ def main(prompt, image_path):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     # initialize the predictor
-    predictor = SAM2ImagePredictor.from_pretrained("facebook/sam2.1-hiera-large")
+    sam2_checkpoint = "./checkpoints/sam2.1_hiera_large.pt"
+    model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
+    predictor = build_sam2_image_predictor(model_cfg, sam2_checkpoint)
     predictor.set_image(image)
 
     with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
