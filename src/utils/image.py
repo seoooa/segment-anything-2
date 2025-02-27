@@ -3,24 +3,39 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-def show_masks(mask, ax, random_color=False, borders = True):
+def show_masks(mask, ax, borders=True):
     """
-    Show the mask prediction of the image
+    Show the mask of the image
+
+    mask: mask of the image
+    ax: axis of the image
+    borders: if True, show the borders of the mask
     """
-    if random_color:
-        color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)
-    else:
-        color = np.array([30/255, 144/255, 255/255, 0.6])
+    color = np.array([0, 0, 0, 0.9])
     h, w = mask.shape[-2:]
-    mask = mask.astype(np.uint8)
-    mask_image =  mask.reshape(h, w, 1) * color.reshape(1, 1, -1)
+    mask = mask.astype(np.uint8).reshape(h, w)
+    
+    mask_image = np.zeros((h, w, 4), dtype=np.float32)
+    
+    mask_bool = (mask == 0)
+    mask_image[mask_bool] = color
+
     if borders:
-        contours, _ = cv2.findContours(mask,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE) 
+        binary_mask = (mask_bool.astype(np.uint8)) * 255
+        contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         contours = [cv2.approxPolyDP(contour, epsilon=0.01, closed=True) for contour in contours]
-        mask_image = cv2.drawContours(mask_image, contours, -1, (1, 1, 1, 0.5), thickness=2) 
+        mask_image = cv2.drawContours(mask_image, contours, -1, (1, 1, 1, 0.5), thickness=2)
+        
     ax.imshow(mask_image)
 
 def show_points(point_coords, point_labels, ax):
+    """
+    Show the points of the image
+    
+    point_coords: coordinates of the points
+    point_labels: labels of the points
+    ax: axis of the image
+    """
     pos_points = np.array(point_coords)
     
     if pos_points.ndim == 1:
@@ -34,6 +49,9 @@ def show_points(point_coords, point_labels, ax):
 def show_box(box, ax):
     """
     Show the bounding box of the image
+
+    box: bounding box of the image
+    ax: axis of the image
     """
     box = np.array(box)
 
@@ -47,6 +65,14 @@ def show_box(box, ax):
 def show_image_masks_and_prompts(image, masks, scores, point_coords=None, box_coords=None, input_labels=None, borders=True):
     """
     Show the image with the masks and the prompts
+
+    image: image of the image
+    masks: masks of the image
+    scores: scores of the masks 
+    point_coords: coordinates of the points
+    box_coords: coordinates of the box
+    input_labels: labels of the points
+    borders: if True, show the borders of the mask
     """
     fig, axes = plt.subplots(1, 3, figsize=(20, 8))
     
@@ -68,6 +94,15 @@ def show_image_masks_and_prompts(image, masks, scores, point_coords=None, box_co
 def save_image_with_masks_and_prompts(image, masks, scores, point_coords=None, box_coords=None, input_labels=None, borders=True, save_path='output.png'):
     """
     Save the image with the masks and the prompts
+
+    image: image of the image
+    masks: masks of the image
+    scores: scores of the masks
+    point_coords: coordinates of the points
+    box_coords: coordinates of the box
+    input_labels: labels of the points
+    borders: if True, show the borders of the mask
+    save_path: path to save the image
     """
 
     num_masks = len(masks)
