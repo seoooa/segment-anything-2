@@ -5,6 +5,8 @@
 *.jpeg
 data/*
 !data/.gitkeep
+output/*
+!output/.gitkeep
 !*.dvc
 *.npz
 *.pth
