@@ -43,35 +43,35 @@ cd checkpoints
 For static image
 ```bash
 cd demo
-python demo.py --input image --prompt p # click point
-python demo.py --input image --prompt b # bounding box
+python demo.py --input image --prompt p     # click point
+python demo.py --input image --prompt b     # bounding box
 ```
 
 For video
 ```bash
-python demo.py --input video --prompt p # click point
-python demo.py --input video --prompt b # bounding box
+python demo.py --input video --prompt p     # click point
+python demo.py --input video --prompt b     # bounding box
 ```
 
 For real-time video stream
 ```bash
 python demo.py --input real-time
-
+```
 
 ### Inference on your own data
 
 For static image
 ```bash
 cd script
-python inference_image.py --prompt p # click point
-python inference_image.py --prompt b # bounding box
+python inference_image.py --prompt p    # click point
+python inference_image.py --prompt b    # bounding box
 ``` 
 
 For video
 ```bash
 cd script
-python inference_video.py --prompt p # click point
-python inference_video.py --prompt b # bounding box
+python inference_video.py --prompt p    # click point
+python inference_video.py --prompt b    # bounding box
 ```
 
 For real-time video stream
