@@ -3,7 +3,7 @@ import torch
 import cv2
 import numpy as np
 import click
-from sam2.build_sam import build_sam2_image_predictor
+from src.sam2.build_sam import build_sam2_image_predictor
 from src.utils.prompt import get_click_point, get_bounding_box
 from src.utils.image import show_image_masks_and_prompts, save_image_with_masks_and_prompts
 

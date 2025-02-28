@@ -3,9 +3,9 @@ import torch
 import cv2
 import numpy as np
 import click
-from sam2.build_sam import build_sam2_video_predictor
 from tqdm import tqdm
 
+from src.sam2.build_sam import build_sam2_video_predictor
 from src.utils.video import show_video_masks, save_video_with_masks, load_video, convert_to_mp4
 from src.utils.prompt import get_click_point, get_bounding_box
 

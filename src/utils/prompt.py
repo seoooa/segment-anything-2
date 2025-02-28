@@ -57,3 +57,70 @@ def get_bounding_box(image):
     
     cv2.destroyAllWindows()
     return np.array(points)
+
+def mouse_callback_real_time(event, x, y, flags, prompt):
+    """
+    mouse callback function for real-time prompt input (point or bounding box)
+
+    prompt: dictionary instead of global variables (e.g. popup window state and prompt information)
+    """
+    prompt_mode = prompt.get("mode", "point")
+    
+    if prompt_mode == "point":
+        if event == cv2.EVENT_LBUTTONDOWN:
+            prompt["point_coords"] = [[x, y]]
+            prompt["point_labels"] = [1]
+            prompt["if_init"] = False
+            print(f"New point prompt input: {prompt['point_coords']}")
+    elif prompt_mode == "box":
+        if event == cv2.EVENT_LBUTTONDOWN:
+            prompt["bbox"] = None
+            prompt["bbox_start"] = (x, y)
+            prompt["bbox_end"] = (x, y)
+            print(f"Bounding box starting point: {prompt['bbox_start']}")
+        elif event == cv2.EVENT_MOUSEMOVE and flags & cv2.EVENT_FLAG_LBUTTON:
+            if prompt.get("bbox_start") is not None:
+                prompt["bbox_end"] = (x, y)
+        elif event == cv2.EVENT_LBUTTONUP:
+            prompt["if_init"] = False
+            if prompt.get("bbox_start") is not None:
+                prompt["bbox_end"] = (x, y)
+                x_min = min(prompt["bbox_start"][0], prompt["bbox_end"][0])
+                y_min = min(prompt["bbox_start"][1], prompt["bbox_end"][1])
+                x_max = max(prompt["bbox_start"][0], prompt["bbox_end"][0])
+                y_max = max(prompt["bbox_start"][1], prompt["bbox_end"][1])
+                prompt["bbox"] = [[x_min, y_min, x_max, y_max]]
+                print(f"New bounding box prompt input: {prompt['bbox']}")
+
+def process_keyboard_input(prompt):
+    """
+    Process keyboard input to update prompt mode
+    
+    입력:
+        prompt(dict): dictionary containing prompt settings
+    Returns:
+        True: user requests termination by pressing 'q' key
+        False: other cases
+    """
+    key = cv2.waitKey(1) & 0xFF
+    if key == ord("p"): # convert to point mode
+        prompt["mode"] = "point"
+        prompt["point_coords"] = []
+        prompt["point_labels"] = []
+        prompt["bbox_start"] = None
+        prompt["bbox_end"] = None
+        prompt["bbox"] = None
+        prompt["if_init"] = False
+        print("Point prompt mode activated.")
+    elif key == ord("b"): # convert to bounding box mode
+        prompt["mode"] = "box"
+        prompt["point_coords"] = []
+        prompt["point_labels"] = []
+        prompt["bbox_start"] = None
+        prompt["bbox_end"] = None
+        prompt["bbox"] = None
+        prompt["if_init"] = False
+        print("Bounding box prompt mode activated.")
+    elif key == ord("q"): # quit
+        return True
+    return False

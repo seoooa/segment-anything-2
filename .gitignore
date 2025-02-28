@@ -1,12 +1,8 @@
-*.mp4
-*.avi
-*.png
-*.jpg
-*.jpeg
 data/*
 !data/.gitkeep
 output/*
-!output/.gitkeep
+!output/feature-extraction/.gitkeep
+!output/mask-prediction/.gitkeep
 !*.dvc
 *.npz
 *.pth

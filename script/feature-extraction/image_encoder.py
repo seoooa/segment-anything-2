@@ -3,7 +3,7 @@ import torch
 import cv2
 import click
 
-from sam2.build_sam import build_sam2_image_predictor
+from src.sam2.build_sam import build_sam2_image_predictor
 from src.utils.feature_extraction import preprocess_image, apply_pca_and_visualize, plot_combined_features
 
 @click.command()
