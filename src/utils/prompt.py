@@ -1,25 +1,43 @@
 import cv2
 import numpy as np
 
-def get_click_point(image):
+def get_click_point(image, input_points, input_labels):
     """
-    Get the click point of the object in the image
+    Show the click point of the object in the image, and update the current prompt (click point) in real-time.
+    
+    When the left click is made, the green circle and '+' symbol are displayed in the image.
+    When the right click is made, the red circle and '-' symbol are displayed in the image.
     """
-    points = []
+    points, labels = input_points, input_labels
+    img_show = cv2.cvtColor(image.copy(), cv2.COLOR_RGB2BGR)
 
     def mouse_callback(event, x, y, flags, param):
+        nonlocal img_show
         if event == cv2.EVENT_LBUTTONDOWN:
             points.append((x, y))
+            labels.append(1)
+            cv2.circle(img_show, (x, y), 15, (0, 200, 0), 2)
+            cv2.putText(img_show, "+", (x - 13, y + 9), cv2.FONT_HERSHEY_SIMPLEX, 
+                        1, (0, 200, 0), 2, cv2.LINE_AA)
+            cv2.imshow("Select Object", img_show)
+        elif event == cv2.EVENT_RBUTTONDOWN:
+            points.append((x, y))
+            labels.append(0)
+            cv2.circle(img_show, (x, y), 15, (0, 0, 200), 2)
+            cv2.putText(img_show, "-", (x - 13, y + 9), cv2.FONT_HERSHEY_SIMPLEX, 
+                        1, (0, 0, 200), 2, cv2.LINE_AA)
+            cv2.imshow("Select Object", img_show)
 
-    cv2.imshow("Select Object", cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+    cv2.namedWindow("Select Object")
     cv2.setMouseCallback("Select Object", mouse_callback)
+    cv2.imshow("Select Object", img_show)
     
-    while len(points) == 0:
+    while True:
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     
     cv2.destroyAllWindows()
-    return np.array(points)
+    return np.array(points), np.array(labels)
 
 def get_bounding_box(image):
     """
@@ -96,7 +114,7 @@ def process_keyboard_input(prompt):
     """
     Process keyboard input to update prompt mode
     
-    입력:
+    Input:
         prompt(dict): dictionary containing prompt settings
     Returns:
         True: user requests termination by pressing 'q' key

@@ -38,12 +38,13 @@ def main(prompt, image_path):
     predictor = build_sam2_image_predictor(model_cfg, sam2_checkpoint)
     predictor.set_image(image)
 
+    input_points, input_labels = [], []
     with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
         if prompt == "p":
-            input_point = get_click_point(image)
+            input_points, input_labels = get_click_point(image, input_points, input_labels)
             masks, scores, logits = predictor.predict(
-                point_coords=input_point,
-                point_labels= np.array([1]),
+                point_coords=input_points,
+                point_labels=input_labels,
                 multimask_output=True,
             )
             sorted_ind = np.argsort(scores)[::-1]
@@ -51,8 +52,8 @@ def main(prompt, image_path):
             scores = scores[sorted_ind]
             logits = logits[sorted_ind]
 
-            show_image_masks_and_prompts(image, masks, scores, point_coords=input_point, input_labels=[1], borders=True)
-            save_image_with_masks_and_prompts(image, masks, scores, point_coords=input_point, input_labels=[1], borders=True, save_path=output_path)
+            show_image_masks_and_prompts(image, masks, scores, point_coords=input_points, input_labels=input_labels, borders=True)
+            save_image_with_masks_and_prompts(image, masks, scores, point_coords=input_points, input_labels=input_labels, borders=True, save_path=output_path)
 
         elif prompt == "b":
             input_box = get_bounding_box(image)

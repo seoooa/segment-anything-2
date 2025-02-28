@@ -145,3 +145,54 @@ def save_video_with_masks(frames, masks, save_path):
     
     out.release()
     print(f"[Info] Video saved to {save_path}")
+
+
+def select_frame_interactively(video_path, default_frame_idx=0, jump_seconds=0.2):
+    """
+    Select the frame interactively
+
+    video_path: path to the video file
+    default_frame_idx: default frame index
+    jump_seconds: jump seconds
+    """
+    cap = cv2.VideoCapture(video_path)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    if fps <= 0:
+        fps = 30 
+    jump_frames = int(fps * jump_seconds)
+    current_frame_idx = default_frame_idx
+
+    while True:
+        cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame_idx)
+        ret, frame = cap.read()
+        if not ret:
+            print(f"Cannot read frame. Current frame index: {current_frame_idx}")
+            break
+
+        time_sec = current_frame_idx / fps
+
+        cv2.putText(frame, f"Frame: {current_frame_idx}  Time: {time_sec:.1f}s", (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        cv2.putText(frame, f"Left (a): -{jump_seconds}s, Right (d): +{jump_seconds}s, s: select, q: cancel", (10, 70),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        
+        cv2.imshow(f"Frame selection (a/d: {jump_seconds}s move, s: select, q: cancel)", frame)
+        
+        key = cv2.waitKey(0) & 0xFF
+
+        if key == ord('s'):  # select
+            break
+        elif key == ord('q'):  # cancel
+            current_frame_idx = default_frame_idx
+            break
+        elif key == ord('a'):  # left move
+            current_frame_idx = max(0, current_frame_idx - jump_frames)
+        elif key == ord('d'):  # right move
+            current_frame_idx = min(total_frames - 1, current_frame_idx + jump_frames)
+        else:
+            print("Invalid key. Please use a, d, s or q key.")
+
+    cap.release()
+    cv2.destroyAllWindows()
+    return current_frame_idx

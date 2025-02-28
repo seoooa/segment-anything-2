@@ -25,12 +25,13 @@ def demo_image(prompt, image_path, output_path):
     predictor = build_sam2_image_predictor(model_cfg, sam2_checkpoint)
     predictor.set_image(image)
 
+    input_points, input_labels = [], []
     with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
         if prompt == "p":
-            input_point = get_click_point(image)
+            input_points, input_labels = get_click_point(image, input_points, input_labels)
             masks, scores, logits = predictor.predict(
-                point_coords=input_point,
-                point_labels= np.array([1]),
+                point_coords=input_points,
+                point_labels=input_labels,
                 multimask_output=True,
             )
             sorted_ind = np.argsort(scores)[::-1]
@@ -38,8 +39,8 @@ def demo_image(prompt, image_path, output_path):
             scores = scores[sorted_ind]
             logits = logits[sorted_ind]
 
-            show_image_masks_and_prompts(image, masks, scores, point_coords=input_point, input_labels=[1], borders=True)
-            save_image_with_masks_and_prompts(image, masks, scores, point_coords=input_point, input_labels=[1], borders=True, save_path=output_path)
+            show_image_masks_and_prompts(image, masks, scores, point_coords=input_points, input_labels=input_labels, borders=True)
+            save_image_with_masks_and_prompts(image, masks, scores, point_coords=input_points, input_labels=input_labels, borders=True, save_path=output_path)
 
         elif prompt == "b":
             input_box = get_bounding_box(image)
@@ -58,6 +59,7 @@ def demo_image(prompt, image_path, output_path):
 def demo_video(prompt, video_path, output_path):
     predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint)
 
+    input_points, input_labels = [], []
     with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
         # Initialize the state of the video
         cap = cv2.VideoCapture(video_path)
@@ -73,8 +75,8 @@ def demo_video(prompt, video_path, output_path):
 
         # Add the new points or bounding box to the video
         if prompt == "p":
-            input_point = get_click_point(image)
-            frame_idx, object_ids, masks = predictor.add_new_points(inference_state=state, points=input_point, labels=[1], frame_idx=0, obj_id=1)
+            input_points, input_labels = get_click_point(image, input_points, input_labels)
+            frame_idx, object_ids, masks = predictor.add_new_points(inference_state=state, points=input_points, labels=input_labels, frame_idx=0, obj_id=1)
         elif prompt == "b":
             input_box = get_bounding_box(image)
             frame_idx, object_ids, masks = predictor.add_new_points_or_box(inference_state=state, box=input_box, frame_idx=0, obj_id=1)

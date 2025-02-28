@@ -30,10 +30,12 @@ def show_masks(mask, ax, borders=True):
 
 def show_points(point_coords, point_labels, ax):
     """
-    Show the points of the image
+    Show the points on the image
     
     point_coords: coordinates of the points
     point_labels: labels of the points
+                  if label is 1, show the green circle with '+' character,
+                  if label is 0, show the red circle with '-' character.
     ax: axis of the image
     """
     pos_points = np.array(point_coords)
@@ -43,8 +45,23 @@ def show_points(point_coords, point_labels, ax):
             pos_points = pos_points.reshape(1, 2)
     elif pos_points.shape[1] != 2:
         raise ValueError(f"[Error] Shape of point_coords is not valid: {pos_points.shape}")
-        
-    ax.scatter(pos_points[:, 0], pos_points[:, 1], c='green', s=50)
+    
+    if len(point_labels) != len(pos_points):
+        raise ValueError("[Error] Length of point_labels is not equal to the length of point_coords.")
+    
+    for (x, y), label in zip(pos_points, point_labels):
+        if label == 1:
+            ax.scatter(x, y, s=400, facecolors='none', edgecolors='green', linewidths=2)
+            ax.text(x, y, '+', color='green', fontsize=16, fontweight='bold',
+                    ha='center', va='center')
+        elif label == 0:
+            ax.scatter(x, y, s=400, facecolors='none', edgecolors='red', linewidths=2)
+            ax.text(x, y, '-', color='red', fontsize=16, fontweight='bold',
+                    ha='center', va='center')
+        else:
+            ax.scatter(x, y, s=400, facecolors='none', edgecolors='blue', linewidths=2)
+            ax.text(x, y, str(label), color='blue', fontsize=16, fontweight='bold',
+                    ha='center', va='center')
 
 def show_box(box, ax):
     """
