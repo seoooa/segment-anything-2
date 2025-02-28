@@ -1,5 +1,7 @@
 data/*
 !data/.gitkeep
+!data/demo_image.jpg
+!data/demo_video.mp4
 output/*
 !output/feature-extraction/.gitkeep
 !output/mask-prediction/.gitkeep
