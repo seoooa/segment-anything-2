@@ -2,10 +2,13 @@ data/*
 !data/.gitkeep
 !data/demo_image.jpg
 !data/demo_video.mp4
-output/*
+
+output/feature-extraction/*
 !output/feature-extraction/.gitkeep
+output/mask-prediction/*
 !output/mask-prediction/.gitkeep
-!*.dvc
+
+*.dvc
 *.npz
 *.pth
 checkpoints/*.pt
