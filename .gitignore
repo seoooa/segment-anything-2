@@ -12,3 +12,5 @@ output/mask-prediction/*
 *.npz
 *.pth
 checkpoints/*.pt
+
+.gradio/*
