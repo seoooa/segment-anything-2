@@ -15,7 +15,12 @@ def show_prompt_on_frame(frame, prompt):
     
     if prompt["mode"] == "point":
         for pt in prompt["point_coords"]:
-            cv2.circle(frame_display, (int(pt[0]), int(pt[1])), radius=5, color=(0, 255, 0), thickness=-1)
+            x, y = int(pt[0]), int(pt[1])
+            size = 7
+            cv2.line(frame_display, (x - size, y), (x + size, y), color=(255, 255, 255), thickness=3)
+            cv2.line(frame_display, (x, y - size), (x, y + size), color=(255, 255, 255), thickness=3)
+            cv2.line(frame_display, (x - size, y), (x + size, y), color=(0, 0, 0), thickness=1)
+            cv2.line(frame_display, (x, y - size), (x, y + size), color=(0, 0, 0), thickness=1)
     elif prompt["mode"] == "box":
         if prompt["bbox"] is not None:
             x_min, y_min, x_max, y_max = prompt["bbox"][0]
@@ -58,7 +63,12 @@ def show_mask_overlay(frame, out_mask_logits, prompt):
     # draw prompt information
     if prompt["mode"] == "point":
         for pt in prompt["point_coords"]:
-            cv2.circle(overlay, (int(pt[0]), int(pt[1])), radius=5, color=(0, 255, 0), thickness=-1)
+            x, y = int(pt[0]), int(pt[1])
+            size = 7
+            cv2.line(overlay, (x - size, y), (x + size, y), color=(255, 255, 255), thickness=3)
+            cv2.line(overlay, (x, y - size), (x, y + size), color=(255, 255, 255), thickness=3)
+            cv2.line(overlay, (x - size, y), (x + size, y), color=(0, 0, 0), thickness=1)
+            cv2.line(overlay, (x, y - size), (x, y + size), color=(0, 0, 0), thickness=1)
     elif prompt["mode"] == "box" and prompt["bbox"] is not None:
         x_min, y_min, x_max, y_max = prompt["bbox"][0]
         cv2.rectangle(overlay, (x_min, y_min), (x_max, y_max), color=(0, 255, 0), thickness=2)

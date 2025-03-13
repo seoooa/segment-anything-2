@@ -24,8 +24,8 @@ Run Segment Anything Model 2 on a **static image**, **video** and **live video s
 ### Installation
 
 ```bash
-pipenv shell
 pipenv install
+pipenv shell
 ```
 ### Download Checkpoint
 
