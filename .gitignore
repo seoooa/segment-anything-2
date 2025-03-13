@@ -14,3 +14,5 @@ output/mask-prediction/*
 checkpoints/*.pt
 
 .gradio/*
+
+Pipfile.lock

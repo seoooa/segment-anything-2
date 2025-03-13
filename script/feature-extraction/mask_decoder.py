@@ -4,15 +4,26 @@ import cv2
 import numpy as np
 import click
 
-from src.sam2.build_sam import build_sam2_image_predictor
+from src.sam2.build_sam import build_sam2_image_predictor, build_sam2_camera_predictor
 from src.utils.feature_extraction import apply_pca_and_visualize
 from src.utils.prompt import get_click_point
+from src.utils.real_time import show_prompt_on_frame, show_mask_overlay
+from src.utils.prompt import mouse_callback_real_time, process_keyboard_input
 
 @click.command()
-@click.option("--image_path", default=None, type=str, help="image file path (if not specified, the file explorer will be opened)")
-def main(image_path):
+@click.option(
+    '--mode',
+    type=click.Choice(['image', 'video', 'stream']),
+    default='image',
+    help='Feature visualization mode (image, video, stream)'
+)
+def main(mode):
 
-    if image_path is None:
+    sam2_checkpoint = "./checkpoints/sam2.1_hiera_large.pt"
+    model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    
+    if mode == 'image':
         import tkinter as tk
         from tkinter import filedialog
         root = tk.Tk()
@@ -24,59 +35,140 @@ def main(image_path):
         if not image_path:
             raise ValueError("Image file is not selected.")
 
+        # initialize the predictor
+        predictor = build_sam2_image_predictor(model_cfg, sam2_checkpoint)
+        mask_decoder_model = predictor.model.sam_mask_decoder.to(device).eval()
+        
+        features = {}
+        def hook_fn(name):
+            def hook(module, input, output):
+                features[name] = output
+            return hook
 
-    # initialize the predictor
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    sam2_checkpoint = "./checkpoints/sam2.1_hiera_large.pt"
-    model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
-    predictor = build_sam2_image_predictor(model_cfg, sam2_checkpoint)
-    mask_decoder_model = predictor.model.sam_mask_decoder.to(device).eval()
+        # mask decoder
+        hooks = []
+        hooks.append(mask_decoder_model.transformer.layers[1].register_forward_hook(hook_fn("layer2")))
+
+        image = cv2.imread(image_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        # set point prompt
+        input_points, input_labels = [], []
+        input_points, input_labels = get_click_point(image, input_points, input_labels)
+
+        # Forward Pass
+        with torch.no_grad():
+            predictor.set_image(image)
+            _ = predictor.predict(
+                    point_coords=input_points,
+                    point_labels=input_labels,
+                    multimask_output=True,
+                )
+
+        # apply PCA and save individual plots (save PCA result images to dictionary)
+        pca_features = {}
+        for name, feature in features.items():
+            for idx, item in enumerate(feature):
+                for jdx, tensor in enumerate(item):
+                    print(f"{name}_{idx}_{jdx} shape: {tensor.shape}")
+                    print("image.shape: ", image.shape)
+                    idx_name = name+f"_{idx}_{jdx}"
+                    save_path = None
+                    if idx == 1:
+                        pca_features[idx_name] = apply_pca_and_visualize(mode, tensor, image, "mask_decoder", save_path, visualize=True)
+        
+        # Remove hooks
+        for hook in hooks:
+            hook.remove()
     
-    features = {}
-    def hook_fn(name):
-        def hook(module, input, output):
-            features[name] = output
-        return hook
-
-    # mask decoder
-    hooks = []
-    #hooks.append(mask_decoder_model.transformer.layers[0].register_forward_hook(hook_fn("layer1")))
-    hooks.append(mask_decoder_model.transformer.layers[1].register_forward_hook(hook_fn("layer2")))
-    #hooks.append(mask_decoder_model.transformer.final_attn_token_to_image.register_forward_hook(hook_fn("final_attn_token_to_image")))
-    #hooks.append(mask_decoder_model.output_upscaling.register_forward_hook(hook_fn("output_upscaling")))
-    #hooks.append(mask_decoder_model.iou_prediction_head.register_forward_hook(hook_fn("iou_prediction_head")))
-    #hooks.append(mask_decoder_model.pred_obj_score_head.register_forward_hook(hook_fn("pred_obj_score_head")))
-
-    image = cv2.imread(image_path)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-    # set point prompt
-    input_point = get_click_point(image)
-    input_label = np.array([1])
-
-    # Forward Pass
-    with torch.no_grad():
-        predictor.set_image(image)
-        _ = predictor.predict(
-                point_coords=input_point,
-                point_labels=input_label,
-                multimask_output=True,
-            )
-
-    # apply PCA and save individual plots (save PCA result images to dictionary)
-    pca_features = {}
-    for name, feature in features.items():
-        for idx, item in enumerate(feature):
-            for jdx, tensor in enumerate(item):
-                print(f"{name}_{idx}_{jdx} shape: {tensor.shape}")
-                idx_name = name+f"_{idx}_{jdx}"
-                save_path = f"./output/feature-extraction/mask_decoder_self_attention_{idx_name}.jpg"
-                if idx == 1:
-                    pca_features[idx_name] = apply_pca_and_visualize(tensor, image, "mask_decoder", save_path)
+    elif mode == 'video':
+        pass
     
-    # Remove hooks
-    for hook in hooks:
-        hook.remove()
+    elif mode == 'stream':
+       # initialize model
+        predictor = build_sam2_camera_predictor(model_cfg, sam2_checkpoint)
+        
+        # initialize camera
+        cap = cv2.VideoCapture(0)
+        if not cap.isOpened():
+            print("Error: Unable to open camera. Please check the correct camera index or connection status.")
+            return
 
+        # initialize prompt
+        prompt = {
+            "mode": "point",
+            "point_coords": [[500, 500]],
+            "point_labels": [1],
+            "bbox_start": None,
+            "bbox_end": None,
+            "bbox": None,
+            "if_init": False
+        }
+        
+        # initialize window for stream and PCA visualization
+        cv2.namedWindow("Real-Time Camera")
+        cv2.namedWindow("PCA Visualization")
+        cv2.setMouseCallback("Real-Time Camera", mouse_callback_real_time, prompt)
+
+        with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
+            out_obj_ids, out_mask_logits = None, None
+            while True:
+                ret, frame = cap.read()
+                frame = cv2.flip(frame, 1)  # Mirror display
+                
+                if not ret:
+                    break
+
+                if process_keyboard_input(prompt):
+                    break
+
+                if not prompt["if_init"]:
+                    if prompt["mode"] == "point" and prompt["point_coords"]:
+                        predictor.load_first_frame(frame)
+                        
+                        features = {}
+                        def hook_fn(name):
+                            def hook(module, input, output):
+                                features[name] = output
+                            return hook
+                        hooks = []
+
+                        mask_decoder_model = predictor.sam_mask_decoder.to(device)
+                        hooks.append(mask_decoder_model.transformer.layers[1].register_forward_hook(hook_fn("layer2")))
+                        
+                        _, out_obj_ids, out_mask_logits = predictor.add_new_prompt(
+                            0, 1, points=prompt["point_coords"], labels=prompt["point_labels"]
+                        )
+                        prompt["if_init"] = True
+                        
+                        pca_features = {}
+                        for name, feature in features.items():
+                            for idx, item in enumerate(feature):
+                                for jdx, tensor in enumerate(item):
+                                    print(f"{name}_{idx}_{jdx} shape: {tensor.shape}")
+                                    if idx == 1:
+                                        pca_img = apply_pca_and_visualize(mode, tensor, frame, "mask_decoder", save_path=None, visualize=False)
+                                        pca_img = (np.clip(pca_img, 0, 1) * 255).astype(np.uint8)
+
+                                        height, width = frame.shape[:2]
+                                        target_size = (width // 2, height // 2)
+                                        pca_img_resized = cv2.resize(pca_img, target_size)
+
+                                        cv2.imshow("PCA Visualization", pca_img_resized)
+                        for hook in hooks:
+                            hook.remove()
+                else:
+                    out_obj_ids, out_mask_logits = predictor.track(frame)
+                
+                show_prompt_on_frame(frame, prompt)
+                if out_mask_logits is not None:
+                    show_mask_overlay(frame, out_mask_logits, prompt)
+                cv2.imshow("Real-Time Camera", frame)
+                
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+            
+        cap.release()
+        cv2.destroyAllWindows()
 if __name__ == "__main__":
     main()

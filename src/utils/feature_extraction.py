@@ -41,7 +41,7 @@ def compute_pca_feature_image_encoder(feature_map, original_size):
     E_pca_3_resized = cv2.resize(E_pca_3.cpu().numpy(), (original_size[1], original_size[0]), interpolation=cv2.INTER_CUBIC)    # h, w, c -> w, h, c
     return E_pca_3_resized
 
-def compute_pca_feature_mask_decoder(feature_map, original_size):
+def compute_pca_feature_mask_decoder(mode, feature_map, original_size):
     """
     Compute the PCA feature of the mask decoder.
     Args:
@@ -56,8 +56,15 @@ def compute_pca_feature_mask_decoder(feature_map, original_size):
         E_patch = feature_map  # (B, H*W, C)
     
     E_patch = E_patch.squeeze(0)  # (4096, 256)
+
+    if mode == "image":
+        _, _, V = torch.pca_lowrank(E_patch)
     
-    _, _, V = torch.pca_lowrank(E_patch)
+    elif mode == "stream":
+        _, _, V = torch.pca_lowrank(E_patch.cpu())
+        V = V.cpu()
+        E_patch = E_patch.cpu()
+    
     E_pca_3 = torch.matmul(E_patch, V[:, :3]) # (4096, 256) x (256, 3) -> (4096, 3)
     E_pca_3 = (E_pca_3 - E_pca_3.min()) / (E_pca_3.max() - E_pca_3.min() + 1e-8)
     
@@ -72,7 +79,7 @@ def compute_pca_feature_mask_decoder(feature_map, original_size):
 
     return E_pca_3_resized
 
-def apply_pca_and_visualize(feature_map, original_image, feature_type, save_path = None):
+def apply_pca_and_visualize(mode, feature_map, original_image, feature_type, save_path = None, visualize = False):
     """
     Apply PCA and visualize the feature.
     Args:
@@ -83,10 +90,11 @@ def apply_pca_and_visualize(feature_map, original_image, feature_type, save_path
     Returns:
         E_pca_3_resized: (H, W, 3)
     """
+
     if feature_type == "mask_decoder":
-        E_pca_3_resized = compute_pca_feature_mask_decoder(feature_map, original_size=original_image.shape[:2])
+        E_pca_3_resized = compute_pca_feature_mask_decoder(mode, feature_map, original_size=original_image.shape[:2])
     elif feature_type == "image_encoder":
-        E_pca_3_resized = compute_pca_feature_image_encoder(feature_map, original_size=original_image.shape[:2])
+        E_pca_3_resized = compute_pca_feature_image_encoder(mode, feature_map, original_size=original_image.shape[:2])
     
     fig, axes = plt.subplots(1, 2, figsize=(10, 5))
     axes[0].imshow(original_image)
@@ -100,6 +108,8 @@ def apply_pca_and_visualize(feature_map, original_image, feature_type, save_path
     plt.tight_layout()
     if save_path is not None:
         plt.savefig(save_path, bbox_inches='tight', dpi=300)
+    if visualize:
+        plt.show()
     plt.close()
     
     return E_pca_3_resized
